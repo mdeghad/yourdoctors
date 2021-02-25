@@ -8,7 +8,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart';
+
+
+
+
+
 
 class Patient_Dectation extends StatefulWidget {
   @override
@@ -22,26 +27,27 @@ class Patient_Dectation_State extends State<Patient_Dectation> {
   bool widgetVisible = false;
   Directory directory;
   bool isSwitched = false;
-  Image image;
-  File _image;
+  List imageArray = [];
+  var image;
 
-  // function to open camera
+
+  //function to open camera
   Future openCamera() async {
-    var image = await ImagePicker.pickImage(source: ImageSource.camera);
-    final directory = await getExternalStorageDirectory();
-    final myImagePath = '${directory.path}/MyImages' ;
-    final myImgDir = await new Directory(myImagePath).create();
-    setState(() {
-      _image =image;
-      widgetVisible = true;
-    });
-  }
+  image = await ImagePicker.pickImage(source: ImageSource.camera);
+    imageArray.add(image);
+      setState(() {
+        imageArray;
+        widgetVisible = true;
+      });
+    }
+
 
   //function to open gallery
   Future openGallery() async {
-    var picture = await ImagePicker.pickImage(source: ImageSource.gallery);
+   image = await ImagePicker.pickImage(source: ImageSource.gallery,);
+    imageArray.add(image);
     setState(() {
-      _image = picture;
+      imageArray;
       widgetVisible = true;
     });
   }
@@ -239,24 +245,41 @@ class Patient_Dectation_State extends State<Patient_Dectation> {
                   children: [
                     Wrap(children: [
                       Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: CustomizedColors.homeSubtitleColor,
+
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: CustomizedColors.homeSubtitleColor,
+                            ),
                           ),
-                        ),
-                        child: _image == null
-                            ? Text('No image selected.')
-                            : Image.file(_image,
-                                width: 50, height: 60, fit: BoxFit.contain),
-                      )
+                          height: 100,
+                         // color: Colors.green,
+                          child: imageArray.isEmpty
+                              ? Text('No image selected.')
+                              : GridView.count(
+                                  crossAxisCount: 6,
+                                  children: List.generate(imageArray.length,
+                                      (generator) {
+                                    var img = imageArray[generator];
+                                    return Container(
+                                        padding: EdgeInsets.all(5),
+                                        // decoration: BoxDecoration(border: Border.all(width: 1)),
+                                        child: Image.file(img,width: 10,height: 10,fit: BoxFit.contain,));
+                                  })))
                     ]),
                     SizedBox(
                       height: 10,
                     ),
+
+                    //storing images into separate folder
                     RaisedBtn(
                         text: AppStrings.submitImages,
-                        onPressed: () {
+                        onPressed: () async {
+                          final Directory directory = await getExternalStorageDirectory();
+                          String path='${directory.path}/YourDrsImages';
+                          final myImgDir = await Directory(path).create(recursive: true);
+                          final File newImage = await image.copy('${myImgDir.path}/${basename(image.path)}');
                           setState(() {
+                            imageArray.add(newImage);
                             widgetVisible = false;
                           });
                         },
